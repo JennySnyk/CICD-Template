@@ -1,0 +1,27 @@
+name: Example workflow for Python-3.8 using Snyk
+on: push
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Test dependencies with Snyk #Testing the dependencies and getting the output in the log 
+        uses: snyk/actions/python@master
+        continue-on-error: true #To make sure that the next steps will be performed
+        env:
+          SNYK_TOKEN: ${{secrets.SNYK_TOKEN}}
+      - uses: snyk/actions/setup@master
+      - name: Monitor dependencies for security issues with Snyk #Sending the result to Snyk WebUI including name changed 
+        run: snyk monitor --project-name=<PROJECT_NAME>
+        env:
+          SNYK_TOKEN: ${{secrets.SNYK_TOKEN}}
+      - name: Snyk Code Test #Running the SAST Scanning without sending it to Snyk UI
+        continue-on-error: true
+        run: snyk code test --sarif > snyk_sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Upload results to Github Code Scanning #Sending the result to Github Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk_sarif 
+        
